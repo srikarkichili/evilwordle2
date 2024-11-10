@@ -1,3 +1,4 @@
+
 """
 Student information for this assignment:
 
@@ -94,15 +95,11 @@ class Keyboard:
         for i in range(len(guessed_word)):
             letter = guessed_word[i]
             color = feedback_colors[i]
-            self.colors[letter] = color
             if color == CORRECT_COLOR:
                 self.colors[letter] = CORRECT_COLOR
             elif color == WRONG_SPOT_COLOR:
                 if self.colors[letter] != CORRECT_COLOR:
                     self.colors[letter] = WRONG_SPOT_COLOR
-            elif color == NOT_IN_WORD_COLOR:
-                if self.colors[letter] not in [CORRECT_COLOR, WRONG_SPOT_COLOR]:
-                    self.colors[letter] = NOT_IN_WORD_COLOR
 
     # TODO: Modify this method. You may delete this comment when you are done.
     def __str__(self):
@@ -135,10 +132,10 @@ class Keyboard:
         ]
         color_rows = []
         for i in rows:
-            color_row = ''
+            row = ''
             for j in i:
-                color_row += color_word(self.colors[j], j)
-            color_rows.append(color_row)
+                row += color_word(self.colors[j], j)
+            color_rows.append(row)
         return '\n'.join(color_rows)
 
 
@@ -176,13 +173,13 @@ class WordFamily:
         """
         self.feedback_colors = feedback_colors
         self.words = words
-        self.diffculty = self.diffculty()
+        self.difficulty = self.calculate()
         # TODO: implement the difficulty calculation here.
-    def difficulty(self):
-        correct = self.feedback_colors.count(CORRECT_COLOR)
-        wrong = self.feedback_colors.count(WRONG_SPOT_COLOR)
-        not = self.feedback_colors.count(NOT_IN_WORD_COLOR)
-        return (correct * 3) + (wrong * 2) + (not * 1)
+    def calculate(self):
+        x = 0
+        for i in self.feedback_colors:
+            x += self.COLOR_DIFFICULTY[i]
+        return x
 
     # TODO: Modify this method. You may delete this comment when you are done.
     def __lt__(self, other):
@@ -205,9 +202,13 @@ class WordFamily:
         post: Returns a boolean result of the comparison, raises NotImplementedError
               if `other` is not a WordFamily instance.
         """
-        if self.difficulty() != other.difficulty():
-            return self.difficulty() < other.difficulty()
-        return len(self.words) < len(other.words)
+        if not isinstance(other, WordFamily):
+            raise NotImplementedError("< operator only valid for WordFamily comparisons.")
+        if len(self.words) != len(other.words):
+            return len(other.words) < len(self.words)
+        if self.difficulty != other.difficulty:
+            return other.difficulty > self.difficulty
+        return other.feedback_colors > self.feedback_colors
 
     # DO NOT change this method.
     # You should use this for debugging!
@@ -358,15 +359,10 @@ def fast_sort(lst):
 def merge(left, right):
     sort = []
     while left and right:
-        if right[0].difficulty() > left[0].difficulty():
+        if left[0] < right[0]:
             sort.append(left.pop(0))
-        elif right[0].difficulty() < left[0].difficulty():
-            sort.append(right.pop(0))
         else:
-            if right[0].pattern > left[0].pattern:
-                sort.append(left.pop(0))
-            else:
-                sort.append(right.pop(0))
+            sort.append(right.pop(0))
     sort.extend(left)
     sort.extend(right)
     return sort
@@ -401,6 +397,7 @@ def get_feedback_colors(secret_word, guessed_word):
                 secret[secret.index(guessed_word[i])] = None
     return feedback
 
+
 # TODO: Modify this function. You may delete this comment when you are done.
 def get_feedback(remaining_secret_words, guessed_word):
     """
@@ -423,19 +420,17 @@ def get_feedback(remaining_secret_words, guessed_word):
     map = {}
     for i in remaining_secret_words:
         feedback = get_feedback_colors(i, guessed_word)
-        if tuple(feedback) not in map:
-            map[tuple(feedback)] = []
-        map[tuple(feedback)].append(i)
+        feedback_tuple = tuple(feedback)
+        if feedback_tuple not in map:
+            map[feedback_tuple] = []
+        map[feedback_tuple].append(i)
     family = []
-    for i in map:
-        x = i
-        y = map[x]
-        family.append(WordFamily(list(x), y))
-    sorted = fast_sort(family)
-    hardest = sorted[0]
-    colors = hardest.colors
-    remaining = hardest.y
-    return colors, remaining
+    for j in map.values():
+        feedback_tuple = j[0]
+        family.append(WordFamily(list(feedback_tuple), j))
+    sort = fast_sort(family)
+    hard = sort[0]
+    return hard.feedback_colors, hard.j
 
 # DO NOT modify this function.
 def main():
