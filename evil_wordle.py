@@ -182,7 +182,7 @@ class WordFamily:
     def calculate(self):
         x = 0
         for i in self.feedback_colors:
-            x += self.COLOR_DIFFICULTY[i]
+            x += self.COLOR_DIFFICULTY.get(i, 0)
         return x
 
     # TODO: Modify this method. You may delete this comment when you are done.
